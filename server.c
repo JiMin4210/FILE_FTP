@@ -8,10 +8,10 @@
 #include <arpa/inet.h>
 
 #define INIT_MSG "=========================================\nHello! I'm P2P File Sharing Server...\nPlease, LOG-IN!\n=========================================\n"
-#define LOGIN_MSG "==========================\nNum : %d User Information\nID: %s, PW: %s\n==========================\n"
+#define LOGIN_MSG "============================\nNum : %d User Information\nID: %s, PW: %s\n============================\n"
 #define PW_ERROR "Log-in fail: Incorrect password...\n"
 #define ID_ERROR "Log-in fail: Incorrect ID...\n"
-#define SUCCESS_MSG "Log-in success!! [%s] *^^*\n"
+#define SUCCESS_MSG "Log-in success!! [%s] *^^*\n\n"
 
 #define SERV_IP "220.149.128.100"
 #define SERV_PORT 4460
@@ -108,8 +108,11 @@ void *clnt_connection(void * count) {
 		
 		if (!strcmp(buf, "1") || !strcmp(buf, "2"))
 		{
+			printf("============================\n");
+			printf("* %s updated file-list. \n", client_info[num].id);
+			printf("============================\n\n");
 			recv(client_sock, buf, sizeof(buf),0); // file_list받음
-			printf("\n%s\n", buf);
+			//printf("\n%s\n", buf); // 받은 파일리스트 출력
 			FILE *fp; // 임시 파일용
 			FILE *fp_all; // 파일리스트 작성용
 
@@ -144,6 +147,9 @@ void *clnt_connection(void * count) {
 
 		if (!strcmp(buf, "3")) // 종합 파일리스트를 전송하고 파일 을 받을것인지 확인 -> 받으려는 순간 합쳐야 제일 최신화된 정보 얻기 가능(적기)
 		{
+			printf("============================\n");
+			printf("* %s requested file-list. \n", client_info[num].id);
+			printf("============================\n\n");
 			char merge[512];
 			int count = 0;
 			memset(buf, 0, sizeof(buf)); // 버퍼 초기화
@@ -196,17 +202,17 @@ void *clnt_connection(void * count) {
 			fp_all = fopen("./list/file_list.txt", "r"); // 이쪽은 나중에 FTP 전용 함수로 바꿔주기 - 굳이 함수 안이용해도 될듯 서버라서 한번밖에 안씀
 			fread(buf, 1, BUFFSIZE, fp_all);
 			fclose(fp_all); // 파일 내용 출력 과정
-			printf("\n%s\n", buf);
-			printf("len = %d\n", strlen(buf));
-			send(client_sock, buf, sizeof(buf), 0); // 서버 파일리스트 전송 -> 용량제한 있는듯 1024하니까 전송 잘 안됐음 - 512가 최대인듯하다.(대략 14개 파일 = 540크기)
+			//printf("\n%s\n", buf); // 최종 서버 리스트 파일 출력
+			//printf("len = %d\n", strlen(buf)); // 버퍼 크기 혹시몰라서 실험
+			send(client_sock, buf, sizeof(buf), 0); // 서버 파일리스트 전송 -> 용량제한 있는듯 1024하니까 전송 잘 안됐음 - 512가 최대인듯하다.(대략 14개 파일 = 540크기)		
 		}		
 	}
 
 	if (client_info[num].id[0] == NULL) // 종료하는 과정
 		strcpy(client_info[num].id, "custom");
-	printf("==========================\n");
-	printf("       %s is out\n", client_info[num].id);
-	printf("==========================\n\n");
+	printf("============================\n");
+	printf("        %s is out\n", client_info[num].id);
+	printf("============================\n\n");
 	close(client_sock);
 	pthread_exit(0);
 	return;

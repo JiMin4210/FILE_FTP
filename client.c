@@ -26,6 +26,11 @@ char pw[20];
 char file_list[20][20]; // 파일 리스트를 저장
 int file_count; // 현재 몇개의 파일이 존재 하는지?
 
+char target_filename[20]; // 원하는 파일 이름
+char target_id[20]; // 원하는 파일 이름
+char target_ip[16]; // 파일 전송받을 ip, port 주소
+int target_port;
+
 int main(void)
 {
 	system("clear"); // 켜질 때 화면 깨끗하게
@@ -78,7 +83,7 @@ int main(void)
 		scanf("%s", buf); // 원하는 메뉴 선택
 		printf("\n");
 		system("clear");
-		printf("\n\n\n\n\n");
+		printf("\n\n\n");
 		send(sockfd, buf, sizeof(buf), 0); // 번호 전달
 
 		if (!strcmp(buf, "1")) // 현재 파일 리스트 최신화 + 파일 리스트 내용 전송
@@ -127,13 +132,49 @@ int main(void)
 				}
 			}
 
-			if (file_info[0] != NULL)
+			if (file_info[0]) // file_info[0]이 NULL값이 아니라면 즉 값이 존재 한다면
 			{
+				char word[4][50] = { 0, }; // file_name, ip, port 구분을 위한 버퍼
+				char *point = &file_info[3]; // 무조건 index=3부터 file_name 시작
+				int topic_count = 0;
+				int count = 0;
+				while (*point) // 단어들을 구분하는 알고리즘 (포인터가 가리키는 값이 NULL이 아닐 때)
+				{
+					word[topic_count][count++] = *point;
+					point++;
+					if (*point == '\t')
+					{
+						point++;
+						topic_count++;
+						count = 0;
+					}
+				}
+				strcpy(target_filename, word[0]); // 대상의 파일 이름
+				strcpy(target_id, word[1]); // 대상의 ip주소
+				strcpy(target_ip, word[2]); // 대상의 ip주소
+				target_port = atoi(word[3]); // 대상의 port번호 복사
+
+				printf("================target_info===============\n");
+				printf("target_filename = %s\n", target_filename);
+				printf("target_id       = %s\n", target_id);
+				printf("target_ip       = %s\n", target_ip);
+				printf("target_port     = %d\n", target_port);
+				printf("==========================================\n\n");
+				printf("Would you like to have the file transferred?(yes/no) : ");
+				scanf("%s", buf);
+				if (!strcmp(buf, "yes"))
+				{
+					printf("You did enter yes.\n\n");
+				}
+				else
+				{
+					printf("You did not enter yes.\n\n");
+				}
 
 			}
 			else // file_info가 비어있다면
 			{
-				printf("\nsearch error\n");
+				printf("\nsearch error\n\n");
 			}
 
 		}
