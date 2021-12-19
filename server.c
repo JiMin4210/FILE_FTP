@@ -56,13 +56,12 @@ int main(void)
 		exit(1);
 	}
 	else printf("Server-socket() sockfd is OK...\n");
-	if (1)
-	{
-		my_addr.sin_family = AF_INET;
-		my_addr.sin_port = htons(SERV_PORT);
-		my_addr.sin_addr.s_addr = INADDR_ANY;
-		memset(&(my_addr.sin_zero), 0, 8);
-	}
+
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(SERV_PORT);
+	my_addr.sin_addr.s_addr = INADDR_ANY;
+	memset(&(my_addr.sin_zero), 0, 8);
+	
 	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&val, sizeof(val)) < 0) {
 		perror("setsockopt");
 		close(sockfd);
@@ -106,7 +105,7 @@ void *clnt_connection(void * count) {
 		if(!recv(client_sock, buf, sizeof(buf),0)) break;
 		//printf("number = %s\n", buf);
 		
-		if (!strcmp(buf, "1") || !strcmp(buf, "2"))
+		if (!strcmp(buf, "1"))
 		{
 			printf("============================\n");
 			printf("* %s updated file-list. \n", client_info[num].id);
@@ -123,8 +122,11 @@ void *clnt_connection(void * count) {
 
 			recv(client_sock, buf, sizeof(buf), 0); // IP주소 받음 (파일 전송 완료 후)
 			strcpy(client_info[num].ip, buf);
+			for (int i = 0; i < 5000; i++);
+			printf("ip = %s\n", buf);
 			recv(client_sock, buf, sizeof(buf), 0); // 포트 번호 받음
 			strcpy(client_info[num].port, buf);
+			printf("port = %s\n", buf);
 
 			fp = fopen("./list/file_list_test.txt", "r"); // 읽기모드로 임시파일 열기
 			char file_name[50];
@@ -200,14 +202,14 @@ void *clnt_connection(void * count) {
 			pthread_mutex_unlock(&mutex); // file_list 수정이 끝날 때 뮤텍스 언락해주기
 
 			fp_all = fopen("./list/file_list.txt", "r"); // 이쪽은 나중에 FTP 전용 함수로 바꿔주기 - 굳이 함수 안이용해도 될듯 서버라서 한번밖에 안씀
+			memset(buf, 0, sizeof(buf)); // 초기화 해줘야 깔끔하게 값이 들어간다. - fread시 초기화의 중요성 적기 (실험결과 다 없애고하는게 아닌 덮어씌우는거라 위험)
 			fread(buf, 1, BUFFSIZE, fp_all);
 			fclose(fp_all); // 파일 내용 출력 과정
 			//printf("\n%s\n", buf); // 최종 서버 리스트 파일 출력
-			//printf("len = %d\n", strlen(buf)); // 버퍼 크기 혹시몰라서 실험
-
-			for (int i = 0; i < 5000; i++) // 여긴 왜인지 모르겠는데 바로 보내면 가끔 못보내는 경우가 생겼다. 따라서 딜레이를 조금 준다.
-			send(client_sock, buf, sizeof(buf), 0); // 서버 파일리스트 전송 -> 용량제한 있는듯 1024하니까 전송 잘 안됐음 - 512가 최대인듯하다.(대략 14개 파일 = 540크기)		
-			//printf("123\n"); //위에 딜레이 없어도 이상하게 이쪽에 printf 한번만써줘도 전송 오류가 없어졌다 이유를 모르겠다.
+			//printf("buf len = %d\n", strlen(buf)); // 버퍼 크기 혹시몰라서 실험 - 문제없음
+			//for (int i = 0; i < 5000; i++);
+			send(client_sock, buf, strlen(buf), 0); // 서버 파일리스트 전송 -> 용량제한 있는듯 1024하니까 전송 잘 안됐음 - 512가 최대인듯하다.(대략 14개 파일 = 540크기)		
+			//printf("send len = %d\n",ll); //위에 딜레이 없어도 이상하게 이쪽에 printf 한번만써줘도 전송 오류가 없어졌다 이유를 모르겠다.
 		}		
 	}
 
