@@ -79,7 +79,7 @@ int main(void)
 		printf("===============Select Menu================\n");
 		printf("1.file update   2.file add   3.file select\n");
 		printf("==========================================\n");
-		printf("select number : ");
+		printf("select menu number : ");
 		scanf("%s", buf); // 원하는 메뉴 선택
 		printf("\n");
 		system("clear");
@@ -117,7 +117,7 @@ int main(void)
 			printf("%s", buf);
 			printf("=============================================\n");
 			do {
-				printf("select file number(0~99) : ");
+				printf("select file number(1~99) : ");
 				scanf("%s", file_num);
 			} while (!(atoi(file_num) > 0 || atoi(file_num) < 99)); // 숫자가 아닌 다른걸 입력하면 다시 입력
 			
@@ -127,7 +127,6 @@ int main(void)
 				if (++line == atoi(file_num))
 				{
 					strcpy(file_info, buf);
-					printf("\nwant = %s\n", file_info);
 					break;
 				}
 			}
@@ -154,7 +153,7 @@ int main(void)
 				strcpy(target_ip, word[2]); // 대상의 ip주소
 				target_port = atoi(word[3]); // 대상의 port번호 복사
 
-				printf("================target_info===============\n");
+				printf("\n================target_info===============\n");
 				printf("target_filename = %s\n", target_filename);
 				printf("target_id       = %s\n", target_id);
 				printf("target_ip       = %s\n", target_ip);

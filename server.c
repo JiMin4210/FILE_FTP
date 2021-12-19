@@ -204,7 +204,10 @@ void *clnt_connection(void * count) {
 			fclose(fp_all); // 파일 내용 출력 과정
 			//printf("\n%s\n", buf); // 최종 서버 리스트 파일 출력
 			//printf("len = %d\n", strlen(buf)); // 버퍼 크기 혹시몰라서 실험
+
+			for (int i = 0; i < 5000; i++) // 여긴 왜인지 모르겠는데 바로 보내면 가끔 못보내는 경우가 생겼다. 따라서 딜레이를 조금 준다.
 			send(client_sock, buf, sizeof(buf), 0); // 서버 파일리스트 전송 -> 용량제한 있는듯 1024하니까 전송 잘 안됐음 - 512가 최대인듯하다.(대략 14개 파일 = 540크기)		
+			//printf("123\n"); //위에 딜레이 없어도 이상하게 이쪽에 printf 한번만써줘도 전송 오류가 없어졌다 이유를 모르겠다.
 		}		
 	}
 
