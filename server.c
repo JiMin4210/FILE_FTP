@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define INIT_MSG "=========================================\nHello! I'm P2P File Sharing Server...\nPlease, LOG-IN!\n=========================================\n"
+#define INIT_MSG "=============================================\nHello! I'm P2P File Sharing Server...\nPlease, LOG-IN!\n=============================================\n"
 #define LOGIN_MSG "============================\nNum : %d User Information\nID: %s, PW: %s\n============================\n"
 #define PW_ERROR "Log-in fail: Incorrect password...\n"
 #define ID_ERROR "Log-in fail: Incorrect ID...\n"
@@ -122,11 +122,8 @@ void *clnt_connection(void * count) {
 
 			recv(client_sock, buf, sizeof(buf), 0); // IP주소 받음 (파일 전송 완료 후)
 			strcpy(client_info[num].ip, buf);
-			for (int i = 0; i < 5000; i++);
-			printf("ip = %s\n", buf);
 			recv(client_sock, buf, sizeof(buf), 0); // 포트 번호 받음
 			strcpy(client_info[num].port, buf);
-			printf("port = %s\n", buf);
 
 			fp = fopen("./list/file_list_test.txt", "r"); // 읽기모드로 임시파일 열기
 			char file_name[50];
@@ -147,7 +144,7 @@ void *clnt_connection(void * count) {
 			pthread_mutex_unlock(&mutex);
 		}
 
-		if (!strcmp(buf, "3")) // 종합 파일리스트를 전송하고 파일 을 받을것인지 확인 -> 받으려는 순간 합쳐야 제일 최신화된 정보 얻기 가능(적기)
+		if (!strcmp(buf, "2")) // 종합 파일리스트를 전송하고 파일 을 받을것인지 확인 -> 받으려는 순간 합쳐야 제일 최신화된 정보 얻기 가능(적기)
 		{
 			printf("============================\n");
 			printf("* %s requested file-list. \n", client_info[num].id);

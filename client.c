@@ -39,6 +39,8 @@ int main(void)
 	int sockfd;
 	struct sockaddr_in dest_addr;
 
+	pid_t pid; // FTP송신용 서버를 만드는 용도
+
 	char buf[BUFFSIZE];
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -66,7 +68,13 @@ int main(void)
 	printf("%s", buf);
 
 	login_check(sockfd);
-	
+
+	pid = fork();
+
+	if(pid == 0) // 로그인 한 시점부터 FTP용 서버를 생성해준다.
+	{
+		make_server();
+	}	
 
 	creat_filelist(sockfd); // 현재 파일리스트 생성
 	send(sockfd, "1", 2, 0); // 처음 시작하자마자 파일 리스트 한번 보냄
@@ -79,7 +87,8 @@ int main(void)
 	while (1) // 로그인 성공 시 FTP 시작
 	{
 		printf("===============Select Menu===================\n");
-		printf("1.file update    2.file add    3.file select\n");
+		printf("  1.file update            2.file receive\n");
+		printf("  3.file add               4.file remove\n");
 		printf("=============================================\n");
 		printf("select menu number : ");
 		scanf("%s", buf); // 원하는 메뉴 선택
@@ -98,12 +107,7 @@ int main(void)
 			send(sockfd, MY_PORT, strlen(MY_PORT) + 1, 0); // 포트번호 전달
 		}
 
-		if (!strcmp(buf, "2")) // 파일 추가시에도 파일 리스트 최신화 + 파일리스트 내용 자동 전송 
-		{
-			creat_filelist(sockfd);
-		}
-
-		if (!strcmp(buf, "3")) // 파일 리스트를 전송받고 선택하는 과정
+		if (!strcmp(buf, "2")) // 파일 리스트를 전송받고 선택하는 과정
 		{
 			char file_num[10];
 			FTP_Receiver("server_filelist.txt", sockfd); // 서버 리스트 파일 수신후 저장
@@ -170,29 +174,37 @@ int main(void)
 				printf("=============================================\n\n");
 				printf("Would you like to have the file transferred?(yes/no) : ");
 				scanf("%s", buf); // 파일을 전송 받을지 말지 결정하는 scanf
+				system("clear");
 
 				if (!strcmp(buf, "yes")) // 파일 전송 최종 승인 시
 				{
-					printf("\nYou did enter yes.\n\n");
 					int ftp_sock = connect_server(); // 서버와의 연결
 					if (ftp_sock)
 					{
 						send(ftp_sock, target_filename, sizeof(target_filename), 0); // 원하는 파일 이름 전송
 						if (FTP_Receiver(target_filename, ftp_sock)) // 파일 전송받고 에러가 없다면
 						{
-							printf("good\n\n");
+							printf("File transfer successful!!\n");
+							sprintf(buf, "./file/%s", target_filename);
+							fp = fopen(buf, "r");
+							memset(buf, 0, BUFFSIZE);
+							fread(buf, 1, BUFFSIZE, fp);
+							fclose(fp);
+							printf("\n===============file_contents=================\n");
+							printf("%s", buf);
+							printf("=============================================\n\n");
+						}
+						else
+						{
+							printf("%s", FILE_ERROR);
 						}
 						close(ftp_sock);
-					}
-					else
-					{
-						printf("Server connection error\n\n");
 					}
 					
 				}
 				else // 파일전송을 하지 않겠다.
 				{
-					printf("\nYou did not enter yes.\n\n");
+					printf("You did not enter yes.\n\n");
 				}
 
 			}
@@ -201,6 +213,14 @@ int main(void)
 				printf("\nsearch error\n\n");
 			}
 
+		}
+		if (!strcmp(buf, "3")) // 파일 추가 시 파일 리스트 최신화 + 파일리스트 내용 자동 전송 
+		{
+			creat_filelist(sockfd);
+		}
+		if (!strcmp(buf, "4")) // 파일 제거 시 파일 리스트 최신화 + 파일리스트 내용 자동 전송 
+		{
+			creat_filelist(sockfd);
 		}
 	}
 	system("clear"); // 꺼질 때 화면 깨끗하게
@@ -225,10 +245,10 @@ void login_check(int sockfd)
 		printf("%s\n", buf);
 
 		if (strstr(buf, "fail"))
-			printf("===============Log in again===============\n");
+			printf("===============Log in again==================\n");
 		else
 		{
-			printf("****************FTP Start*****************\n\n");
+			printf("****************FTP Start********************\n\n");
 			return;
 		}
 	}
@@ -290,12 +310,12 @@ int FTP_Receiver(char *file_name, int sockfd) // 파일을 자동으로 만들�
 	char path[50] = "./file/";
 	strcat(path, file_name); // 원하는 파일 경로를 설정해준다.
 
-	recv(sockfd, buf, sizeof(buf), 0); // 서버 리스트 파일을 전송받음
+	if(!recv(sockfd, buf, sizeof(buf), 0)) return 0; // 서버 리스트 파일을 전송받음 연결 끊길 시 0값 리턴
 	if (strcmp(buf, FILE_ERROR)) // 파일 에러가 아니라면
 	{
 		FILE *fp; // 파일 저장
 		fp = fopen(path, "w");
-		fwrite(buf, 1, strlen(buf), fp);
+		fwrite(buf, 1, strlen(buf), fp); // strlen으로 안해준다면 뭔가 이상하다 - 공백으로 공간이 채워져서 파일 포인터가 멀리 이동해버림 - 이후 a로 열어도 공백 이후에 써지는거 마찬가지 (이거 적기)
 		fclose(fp);
 		return 1;
 	}
@@ -318,7 +338,6 @@ void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이�
 		perror("Server-socket() error 1o1!");
 		exit(1);
 	}
-	else printf("Server-socket() sockfd is OK...\n");
 
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(atoi(MY_PORT));
@@ -330,17 +349,18 @@ void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이�
 		close(sockfd);
 		return;
 	}
+
 	if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1) {
 		perror("Server-bind() error 1o1!");
 		exit(1);
 	}
-	else printf("Server-bind() is OK...\n");
+
 	if (listen(sockfd, BACKLOG) == -1)
 	{
 		perror("listen() error 1o1!");
 		exit(1);
 	}
-	else printf("listen() is OK...\n\n");
+	else printf("Server creation success!!\n\n");
 
 	while (1) {
 		sin_size = sizeof(struct sockaddr_in);
@@ -364,6 +384,7 @@ void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이�
 		}
 	}
 	close(sockfd);
+	exit(0);
 }
 
 int connect_server()
@@ -375,21 +396,17 @@ int connect_server()
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
-		perror("Client-socket() error 1o1!");
+		printf("Client-socket() error 1o1!\n\n");
 		return 0;
 	}
-	else printf("Client-socket() sockfd is OK...\n");
-
 	dest_addr.sin_family = AF_INET;
-
 	dest_addr.sin_port = htons(target_port);
 	dest_addr.sin_addr.s_addr = inet_addr(target_ip);
 
 	memset(&(dest_addr.sin_zero), 0, 8);
 
-
 	if (connect(sockfd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1) {
-		perror("Client-connect() error 1o1!");
+		printf("Client-connect() error 1o1!\n\n");
 		return 0;
 	}
 	else printf("Client-connect() is OK...\n");
