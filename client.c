@@ -190,14 +190,14 @@ int main(void)
 							memset(buf, 0, BUFFSIZE);
 							fread(buf, 1, BUFFSIZE, fp);
 							fclose(fp);
-							printf("\n===============file_contents=================\n");
+							printf("\n=============================================\n");
+							printf("file name : %s\n", target_filename);
+							printf("=============================================\n");
 							printf("%s", buf);
 							printf("=============================================\n\n");
 						}
 						else
-						{
 							printf("%s", FILE_ERROR);
-						}
 						close(ftp_sock);
 					}
 					
