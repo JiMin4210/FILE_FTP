@@ -19,14 +19,16 @@
 #define FILE_ERROR "file does not exist\n\n"
 
 void login_check(int sockfd);
-void creat_filelist();
 void make_server();
 int connect_server();
+void creat_filelist();
+void send_filelist(int sockfd, int flag); // 파일 리스트 만들고 서버에 파일 리스트 전송
 int FTP_Transfer(char *file_name, int sockfd);
 int FTP_Receiver(char *file_name, int sockfd);
 
 char id[20];
 char pw[20];
+char file_list[20][30]; // 파일 리스트를 저장 - 최대 파일 개수 = 20
 
 char target_filename[20]; // 원하는 파일 이름
 char target_id[20]; // 원하는 파일 이름
@@ -41,7 +43,7 @@ int main(void)
 
 	pid_t pid; // FTP송신용 서버를 만드는 용도
 
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE] = { 0, };
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
@@ -76,13 +78,7 @@ int main(void)
 		make_server();
 	}	
 
-	creat_filelist(sockfd); // 현재 파일리스트 생성
-	send(sockfd, "1", 2, 0); // 처음 시작하자마자 파일 리스트 한번 보냄
-	FTP_Transfer("file_list.txt", sockfd); // 리스트 파일 전달
-	for (int i = 0; i < 5000; i++) // 너무 빨리보내면 server쪽에서 데이터를 받지 못하는 경우가 발생했다
-		for (int i = 0; i < 5000; i++); // 실험 결과 4000도 안되고 5000부터 전송이 잘 되었다..
-	send(sockfd, MY_IP, strlen(MY_IP) + 1, 0); // ip주소 전달
-	send(sockfd, MY_PORT, strlen(MY_PORT) + 1, 0); // 포트번호 전달
+	send_filelist(sockfd,1); // 파일리스트 만들고 서버에 전송
 
 	while (1) // 로그인 성공 시 FTP 시작
 	{
@@ -99,37 +95,30 @@ int main(void)
 
 		if (!strcmp(buf, "1")) // 현재 파일 리스트 최신화 + 파일 리스트 내용 전송
 		{
-			creat_filelist(sockfd);
-			FTP_Transfer("file_list.txt", sockfd); // 리스트 파일 전달
-			for (int i = 0; i < 5000; i++) // 너무 빨리보내면 server쪽에서 데이터를 받지 못하는 경우가 발생했다
-				for (int i = 0; i < 5000; i++); // 실험 결과 4000도 안되고 5000부터 전송이 잘 되었다..
-			send(sockfd, MY_IP, strlen(MY_IP) + 1, 0); // ip주소 전달
-			send(sockfd, MY_PORT, strlen(MY_PORT) + 1, 0); // 포트번호 전달
+			send_filelist(sockfd,0); // 수동적인 파일리스트 업데이트 - 프로그램으로 파일 추가한게 아닌 직접 파일경로로가서 생성한 경우 이용
 		}
 
 		if (!strcmp(buf, "2")) // 파일 리스트를 전송받고 선택하는 과정
 		{
-			char file_num[10];
+			int file_num;
 			FTP_Receiver("server_filelist.txt", sockfd); // 서버 리스트 파일 수신후 저장
-			int line = 0; // 몇번째 라인인지?
 
 			FILE *fp; // 리스트 파일에서 ip, port번호 찾는 과정
 			fp = fopen("./file/server_filelist.txt", "r");
+			memset(buf, 0, sizeof(buf)); // fread 전엔 초기화가 필수
 			fread(buf, 1, BUFFSIZE, fp); // 파일 읽기
-			
 			printf("==============SERVER FILE LIST===============\n");
 			printf("%s", buf);
 			printf("=============================================\n");
-			do {
-				printf("select file number(1~99) : ");
-				scanf("%s", file_num);
-			} while (!(atoi(file_num) > 0 || atoi(file_num) < 99)); // 숫자가 아닌 다른걸 입력하면 다시 입력
 			
+			printf("select file number(1~99) : ");
+			scanf("%d", &file_num);
+
 			char file_info[BUFFSIZE] = { 0, }; // 초기화 필수 NULL이라면 원하는 번호를 찾지 못한 것이다.
 			fseek(fp, 0, SEEK_SET); // fread 했으니 다음 fgets를 위해 포인터를 초기화 시켜놓는게 필수이다.
 			while (fgets(buf, sizeof(buf), fp) != NULL) // 원하는 라인을 찾는 과정이다.
 			{
-				if (++line == atoi(file_num))
+				if (!--file_num) // 원하는 라인까지 가는 방법
 				{
 					strcpy(file_info, buf);
 					break;
@@ -184,13 +173,16 @@ int main(void)
 						send(ftp_sock, target_filename, sizeof(target_filename), 0); // 원하는 파일 이름 전송
 						if (FTP_Receiver(target_filename, ftp_sock)) // 파일 전송받고 에러가 없다면
 						{
-							printf("File transfer successful!!\n");
-							sprintf(buf, "./file/%s", target_filename);
+							printf("File transfer successful!!\n\n"); // 성공 메세지 출력
+
+							send_filelist(sockfd, 1); // 파일 리스트 서버로 최신화 시켜주고 출력해줌
+
+							sprintf(buf, "./file/%s", target_filename); // 파일 열고 내용 출력
 							fp = fopen(buf, "r");
-							memset(buf, 0, BUFFSIZE);
+							memset(buf, 0, BUFFSIZE); // fread는 값을 그냥 덮어 씌우는거라 오류 발생을 방지하기위해 메모리 초기화해준다.
 							fread(buf, 1, BUFFSIZE, fp);
 							fclose(fp);
-							printf("\n=============================================\n");
+							printf("==============File Contents==================\n");
 							printf("file name : %s\n", target_filename);
 							printf("=============================================\n");
 							printf("%s", buf);
@@ -200,7 +192,6 @@ int main(void)
 							printf("%s", FILE_ERROR);
 						close(ftp_sock);
 					}
-					
 				}
 				else // 파일전송을 하지 않겠다.
 				{
@@ -214,23 +205,67 @@ int main(void)
 			}
 
 		}
-		if (!strcmp(buf, "3")) // 파일 추가 시 파일 리스트 최신화 + 파일리스트 내용 자동 전송 
+		if (!strcmp(buf, "3")) // 파일 추가
 		{
-			creat_filelist(sockfd);
+			char path[512] = "./file/"; 
+			printf("=============================================\n");
+			printf("file name : ");
+			scanf("%s", buf);
+			strcat(path, buf);
+			printf("* Enter 'exit' to exit the input mode.\n");
+			printf("=============================================\n");
+
+			FILE *fp;
+			fp = fopen(path, "w"); // 파일 만드는 도중에 ctrl+c 종료해도 파일 만들어짐
+			while (1)
+			{
+				printf("input mode : ");
+				scanf("%s", buf);
+				if (!strcmp(buf, "exit")) break;
+				fputs(buf, fp);
+				fputs("\n", fp); // 개행문자 넣어준다.
+			}
+			printf("=============================================\n\n");
+			fclose(fp);
+			printf("File creation successful!!\n\n");
+
+			send_filelist(sockfd,1); // 자동 파일 업데이트 + 리스트 출력	
 		}
-		if (!strcmp(buf, "4")) // 파일 제거 시 파일 리스트 최신화 + 파일리스트 내용 자동 전송 
+		if (!strcmp(buf, "4")) // 파일 제거
 		{
-			creat_filelist(sockfd);
+			int file_num;
+			system("clear");
+			creat_filelist();
+			printf("select file num for remove(1~99) : "); 
+			scanf("%d", &file_num);
+			file_num--;
+			if (file_num >= 0 && file_num < 20)
+			{
+				if (file_list[file_num][0])
+				{
+					char path[512] = "./file/";
+					strcat(path, file_list[file_num]);
+					if(remove(path)) // 파일 삭제
+						printf("file remove error\n\n"); // 파일 삭제 실패 시
+					else
+						printf("%s File removal successful!!\n\n", file_list[file_num]); // 파일 삭제 성공 시
+				}
+				else
+					printf("%s",FILE_ERROR);
+			}
+			else
+				printf("%s", FILE_ERROR);
+
+			send_filelist(sockfd,1); // 자동 파일 업데이트 + 리스트 출력
 		}
 	}
-	system("clear"); // 꺼질 때 화면 깨끗하게
 	close(sockfd);
 	return 0;
 }
 
 void login_check(int sockfd)
 {
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE] = { 0, };
 	while (1)
 	{
 		printf("ID: ");
@@ -254,14 +289,14 @@ void login_check(int sockfd)
 	}
 }
 
-void creat_filelist()  // 파일리스트 만들기 + 정보 전달
+void creat_filelist()  // 파일리스트 만들기
 {
 	DIR *dp; // 폴더 관련
 	struct dirent *dir; 
 	FILE *fp; // 파일 관련
 	fp = fopen("./file/file_list.txt", "w");
 	
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE] = { 0, };
 	int file_count = 0; // 카운트 초기화 - 파일카운트 = 0이면 전송도 X하자
 
 	if ((dp = opendir("./file")) == NULL) // .는 현재 경로를 의미
@@ -270,11 +305,15 @@ void creat_filelist()  // 파일리스트 만들기 + 정보 전달
 		exit(-1);
 	}
 
+	memset(file_list, 0, sizeof(file_list)); // 파일 리스트 변수의 초기화 필수
 	printf("================FILE LIST====================\n");
+	printf("* Read only .txt file\n");
+	printf("=============================================\n");
 	while ((dir = readdir(dp)) != NULL) 
 	{
 		if (!dir->d_ino || !strstr(dir->d_name, ".txt") || !strcmp(dir->d_name, "file_list.txt") || !strcmp(dir->d_name, "server_filelist.txt")) continue; // 오직 txt 파일만 본다 (제외할 파일 선택)
-		sprintf(buf, "%d. %s\n", ++file_count, dir->d_name); 
+		strcpy(file_list[file_count++], dir->d_name);
+		sprintf(buf, "%d. %s\n", file_count, dir->d_name); 
 		printf("%s", buf);
 		fputs(buf, fp); // 파일 리스트를 만들기 위함.
 	}
@@ -284,11 +323,24 @@ void creat_filelist()  // 파일리스트 만들기 + 정보 전달
 	closedir(dp); // 폴더 종료
 }
 
+void send_filelist(int sockfd, int flag) // 파일리스트 전달
+{
+	if(flag)
+		send(sockfd, "1", 2, 0);
+	
+	creat_filelist(); // 현재 파일리스트 생성
+	FTP_Transfer("file_list.txt", sockfd); // 리스트 파일 전달
+	for (int i = 0; i < 5000; i++) // 너무 빨리보내면 server쪽에서 데이터를 받지 못하는 경우가 발생했다
+		for (int i = 0; i < 5000; i++); // 실험 결과 4000도 안되고 5000부터 전송이 잘 되었다..
+	send(sockfd, MY_IP, strlen(MY_IP) + 1, 0); // ip주소 전달
+	send(sockfd, MY_PORT, strlen(MY_PORT) + 1, 0); // 포트번호 전달
+}
+
 int FTP_Transfer(char *file_name, int sockfd)
 {
 	char buf[BUFFSIZE] = { 0, }; // 메모리 초기화 필수
 
-	char path[50] = "./file/";
+	char path[512] = "./file/";
 	strcat(path, file_name); // 원하는 파일 경로를 설정해준다.
 
 	FILE *fp;
@@ -305,11 +357,9 @@ int FTP_Transfer(char *file_name, int sockfd)
 
 int FTP_Receiver(char *file_name, int sockfd) // 파일을 자동으로 만들어주기에 return으로 에러체크안해도됨
 {
-	char buf[BUFFSIZE];
-
-	char path[50] = "./file/";
+	char buf[BUFFSIZE] = { 0, }; // 초기화 안해주면 이상한값 들어있었음. recv가 메모리 초기화 후 들어가는게 아닌것을 확인함
+	char path[512] = "./file/";
 	strcat(path, file_name); // 원하는 파일 경로를 설정해준다.
-
 	if(!recv(sockfd, buf, sizeof(buf), 0)) return 0; // 서버 리스트 파일을 전송받음 연결 끊길 시 0값 리턴
 	if (strcmp(buf, FILE_ERROR)) // 파일 에러가 아니라면
 	{
@@ -328,7 +378,7 @@ void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이�
 	struct sockaddr_in my_addr;
 	struct sockaddr_in their_addr;
 	unsigned int sin_size;
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE] = { 0, };
 	int val = 1;
 
 	pid_t pid;
@@ -392,7 +442,7 @@ int connect_server()
 	int sockfd;
 	struct sockaddr_in dest_addr;
 
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE] = { 0, };
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
@@ -412,5 +462,6 @@ int connect_server()
 	else printf("Client-connect() is OK...\n");
 	return sockfd;
 }
+
 
 
