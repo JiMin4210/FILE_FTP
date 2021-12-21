@@ -85,6 +85,7 @@ int main(void)
 		printf("===============Select Menu===================\n");
 		printf("  1.file update            2.file receive\n");
 		printf("  3.file add               4.file remove\n");
+		printf("  5.file view              6.???????????\n");
 		printf("=============================================\n");
 		printf("select menu number : ");
 		scanf("%s", buf); // 원하는 메뉴 선택
@@ -182,7 +183,7 @@ int main(void)
 							memset(buf, 0, BUFFSIZE); // fread는 값을 그냥 덮어 씌우는거라 오류 발생을 방지하기위해 메모리 초기화해준다.
 							fread(buf, 1, BUFFSIZE, fp);
 							fclose(fp);
-							printf("==============File Contents==================\n");
+							printf("=================File View===================\n");
 							printf("file name : %s\n", target_filename);
 							printf("=============================================\n");
 							printf("%s", buf);
@@ -214,13 +215,13 @@ int main(void)
 			strcat(path, buf);
 			printf("* Enter 'exit' to exit the input mode.\n");
 			printf("=============================================\n");
-
+			getchar(); // 입력버퍼 한번 비워줘야한다.
 			FILE *fp;
 			fp = fopen(path, "w"); // 파일 만드는 도중에 ctrl+c 종료해도 파일 만들어짐
 			while (1)
 			{
 				printf("input mode : ");
-				scanf("%s", buf);
+				gets(buf);
 				if (!strcmp(buf, "exit")) break;
 				fputs(buf, fp);
 				fputs("\n", fp); // 개행문자 넣어준다.
@@ -241,22 +242,70 @@ int main(void)
 			file_num--;
 			if (file_num >= 0 && file_num < 20)
 			{
-				if (file_list[file_num][0])
-				{
-					char path[512] = "./file/";
-					strcat(path, file_list[file_num]);
-					if(remove(path)) // 파일 삭제
-						printf("file remove error\n\n"); // 파일 삭제 실패 시
-					else
-						printf("%s File removal successful!!\n\n", file_list[file_num]); // 파일 삭제 성공 시
-				}
+				char path[512] = "./file/";
+				strcat(path, file_list[file_num]);
+				if(remove(path)) // 파일 삭제
+					printf("%s",FILE_ERROR); // 파일 삭제 실패 시
 				else
-					printf("%s",FILE_ERROR);
+					printf("\n%s File removal successful!!\n\n", file_list[file_num]); // 파일 삭제 성공 시
+
 			}
 			else
-				printf("%s", FILE_ERROR);
+				printf("\n%s", FILE_ERROR);
 
 			send_filelist(sockfd,1); // 자동 파일 업데이트 + 리스트 출력
+		}
+		if (!strcmp(buf, "5")) // 파일 내용 확인
+		{
+			int file_num;
+			system("clear");
+			creat_filelist();
+			printf("select file num for view(1~99) : ");
+			scanf("%d", &file_num);
+			file_num--;
+			if ((file_num >= 0 && file_num < 20) && file_list[file_num][0])
+			{
+				char path[512] = "./file/";
+				strcat(path, file_list[file_num]);
+				FILE *fp;
+				fp = fopen(path, "r");
+				if (fp)
+				{
+					memset(buf, 0, sizeof(buf)); //fread 전 메모리 초기화 필수
+					fread(buf, 1, BUFFSIZE, fp);
+					printf("\n=================File View===================\n");
+					printf("file name : %s\n", file_list[file_num]);
+					printf("=============================================\n");
+					printf("%s", buf);
+					printf("=============================================\n\n");
+					fclose(fp);
+				}
+				else
+					printf("\n%s", FILE_ERROR);
+			}
+			else
+				printf("\n%s", FILE_ERROR);	
+		}
+		if (!strcmp(buf, "6")) // 깜짝 그림 출력
+		{
+			system("clear");
+			FILE *fp;
+			fp = fopen("art.txt", "r");
+			if (fp)
+			{
+				printf("\n");
+				while (fgets(buf,BUFFSIZE, fp) != NULL)
+				{
+					printf("   %s", buf);
+				}
+				printf("\n");
+				fclose(fp);
+			}
+			else
+			{
+				printf("atr file does not exist\n\n");
+			}
+			
 		}
 	}
 	close(sockfd);
@@ -301,7 +350,7 @@ void creat_filelist()  // 파일리스트 만들기
 
 	if ((dp = opendir("./file")) == NULL) // .는 현재 경로를 의미
 	{ 
-		fprintf(stderr, "error\n");
+		fprintf(stderr, "error : A file folder is required, plz make 'file' folder.\n");
 		exit(-1);
 	}
 

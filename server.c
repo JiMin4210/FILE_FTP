@@ -11,6 +11,7 @@
 #define LOGIN_MSG "============================\nNum : %d User Information\nID: %s, PW: %s\n============================\n"
 #define PW_ERROR "Log-in fail: Incorrect password...\n"
 #define ID_ERROR "Log-in fail: Incorrect ID...\n"
+#define ID_DUPERROR "Log-in fail: %s is already connecting to the server...\n"
 #define SUCCESS_MSG "Log-in success!! [%s] *^^*\n\n"
 #define NO_FILE "No files on all clients\n"
 
@@ -19,7 +20,7 @@
 #define BACKLOG 10
 #define BUFFSIZE 512 // 버퍼 사이즈 설정
 #define MAX_CLIENT 10 // 최대 클라이언트 개수
-#define MAX_ID 3 // 생성할 수 있는 ID 개수
+#define MAX_ID 4 // 생성할 수 있는 ID 개수
 
 void *clnt_connection(void * sock);
 void login_check(int num, int client_sock);
@@ -33,9 +34,9 @@ typedef struct Client_Info { // 클라이언트들의 정보를 담기위한 구조체
 	int sock;
 }Client_Info;
 
-char *user_id[3] = { "user1", "user2", "user3" };
-char *user_pw[3] = { "passwd1", "passwd2", "passwd3" };
-int client_count;
+char *user_id[4] = { "user1", "user2", "user3", "user4" };
+char *user_pw[4] = { "passwd1", "passwd2", "passwd3", "passwd4" };
+int client_count; // 현재 몇번째 클라이언트까지 접근했었는지
 Client_Info client_info [MAX_CLIENT]; // 최대 클라이언트 개수만큼 정보 저장 가능.
 int alive_clnt[MAX_CLIENT]; // 현재 연결되어있는 클라이언트를 의미한다. (1 = 연결 중 , 0 = 연결 안됨)
 
@@ -118,17 +119,19 @@ void *clnt_connection(void * count) {
 		{
 			
 			recv(client_sock, buf, sizeof(buf),0); // file_list받음
-			recv(client_sock, buf, sizeof(buf), 0); // IP주소 받음 (파일 전송 완료 후)
-			strcpy(client_info[num].ip, buf);
-			recv(client_sock, buf, sizeof(buf), 0); // 포트 번호 받음
-			strcpy(client_info[num].port, buf);
 			//printf("\n%s\n", buf); // 받은 파일리스트 출력
 			FILE *fp; // 임시 파일용
 			FILE *fp_all; // 파일리스트 작성용
+
 			pthread_mutex_lock(&mutex); // file_list_test 파일의 자원 동시사용을 방지해줘야한다.(동시 접속시 에러 방지)
 			fp = fopen("./list/file_list_test.txt", "w");
 			fwrite(buf, 1, strlen(buf), fp); // 임시파일리스트 작성
 			fclose(fp);
+
+			recv(client_sock, buf, sizeof(buf), 0); // IP주소 받음 (파일 전송 완료 후)
+			strcpy(client_info[num].ip, buf);
+			recv(client_sock, buf, sizeof(buf), 0); // 포트 번호 받음
+			strcpy(client_info[num].port, buf);
 
 			fp = fopen("./list/file_list_test.txt", "r"); // 읽기모드로 임시파일 열기
 			char file_name[50];
@@ -240,25 +243,49 @@ void *clnt_connection(void * count) {
 void login_check(int num, int client_sock)
 {
 	char buf[BUFFSIZE] = { 0, };
+	char input_id[20]; // 임시 아이디 저쟝용
+	char input_pw[20];
 	while (1)
 	{
 		if (!recv(client_sock, buf, sizeof(buf),0)) break; // 아이디 입력 받기 - 중간 종료시 에러 방지 break
-		strcpy(client_info[num].id, buf);
+		strcpy(input_id, buf);
 		if (!recv(client_sock, buf, sizeof(buf),0)) break; // 비밀번호 입력 받기
-		strcpy(client_info[num].pw, buf);
-		sprintf(buf, LOGIN_MSG, num, client_info[num].id, client_info[num].pw);
+		strcpy(input_pw, buf);
+		sprintf(buf, LOGIN_MSG, num, input_id, input_pw);
 		printf("%s", buf); // 로그인 정보 출력				
 
 		for (int i = 0; i < MAX_ID; i++) // id max개 이후 수정해야할 부분임
 		{
-			if (!strcmp(user_id[i], client_info[num].id))
+			if (!strcmp(user_id[i], input_id))
 			{
-				if (!strcmp(user_pw[i], client_info[num].pw))
+				if (!strcmp(user_pw[i], input_pw))
 				{
-					sprintf(buf, SUCCESS_MSG, client_info[num].id);
-					send(client_sock, buf, sizeof(buf), 0); // 성공 메세지 전송
-					printf("%s", buf);
-					return;
+					int flag = 1; // 중복 로그인 체크용 플레그 비트;
+					for (int i = 0; i < MAX_CLIENT; i++) // 현재 로그인중인 사람들중에 id가 중복되는지 체크 (동시 접속 타이밍이 완전 절묘하게 맞으면 동시로그인이 가능하긴함)
+					{
+						if (alive_clnt[i])
+						{
+							if (!strcmp(client_info[i].id, input_id)) // 중복된 ID가 접속해있을 때
+							{
+								sprintf(buf, ID_DUPERROR, input_id);
+								printf("%s\n", buf);
+								send(client_sock, buf, sizeof(buf), 0); // 아이디 중복 에러 메세지 전송
+								flag = 0;
+								break; // 계속 for문을 돌 필요가 없기에 break
+							}
+						}
+					}
+					if (flag)
+					{
+						strcpy(client_info[num].id, input_id);// 로그인 성공 시 구조체에 로그인한 id 넣기
+						strcpy(client_info[num].pw, input_pw);
+						sprintf(buf, SUCCESS_MSG, client_info[num].id);
+						send(client_sock, buf, sizeof(buf), 0); // 성공 메세지 전송
+						printf("%s", buf);
+						return;
+					}
+					else
+						break;
 				}
 				else // 패스워드 틀렸을 때
 				{
