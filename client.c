@@ -82,11 +82,11 @@ int main(void)
 
 	while (1) // 로그인 성공 시 FTP 시작
 	{
-		printf("===============Select Menu===================\n");
-		printf("  1.file update            2.file receive\n");
-		printf("  3.file add               4.file remove\n");
-		printf("  5.file view              6.???????????\n");
-		printf("=============================================\n");
+		printf("===================Select Menu=======================\n");
+		printf("      1.file update            2.file receive\n");
+		printf("      3.file add               4.file delete\n");
+		printf("      5.file view              6.???????????\n");
+		printf("=====================================================\n");
 		printf("select menu number : ");
 		scanf("%s", buf); // 원하는 메뉴 선택
 		printf("\n");
@@ -108,9 +108,9 @@ int main(void)
 			fp = fopen("./file/server_filelist.txt", "r");
 			memset(buf, 0, sizeof(buf)); // fread 전엔 초기화가 필수
 			fread(buf, 1, BUFFSIZE, fp); // 파일 읽기
-			printf("==============SERVER FILE LIST===============\n");
+			printf("==================SERVER FILE LIST===================\n");
 			printf("%s", buf);
-			printf("=============================================\n");
+			printf("=====================================================\n");
 			
 			printf("select file number(1~99) : ");
 			scanf("%d", &file_num);
@@ -144,24 +144,24 @@ int main(void)
 					}
 				}
 				strcpy(target_filename, word[0]); // 대상의 파일 이름
-				strcpy(target_id, word[1]); // 대상의 ip주소
+				strcpy(target_id, word[1]); // 대상의 id
 				strcpy(target_ip, word[2]); // 대상의 ip주소
 				target_port = atoi(word[3]); // 대상의 port번호 복사
 
 				if (!strcmp(target_id, id)) // 자신의 파일인지 검사
 				{
-					printf("\n================error msg====================\n");
-					printf("         %s is your file\n", target_filename);
-					printf("=============================================\n\n");
+					printf("\n====================error msg========================\n");
+					printf("             %s is your file\n", target_filename);
+					printf("=====================================================\n\n");
 					continue; // 자신의 파일이라면 메뉴로 돌아감
 				}
 
-				printf("\n================target_info==================\n");
+				printf("\n====================target_info======================\n");
 				printf("target_filename = %s\n", target_filename);
 				printf("target_id       = %s\n", target_id);
 				printf("target_ip       = %s\n", target_ip);
 				printf("target_port     = %d\n", target_port);
-				printf("=============================================\n\n");
+				printf("=====================================================\n\n");
 				printf("Would you like to have the file transferred?(yes/no) : ");
 				scanf("%s", buf); // 파일을 전송 받을지 말지 결정하는 scanf
 				system("clear");
@@ -183,11 +183,11 @@ int main(void)
 							memset(buf, 0, BUFFSIZE); // fread는 값을 그냥 덮어 씌우는거라 오류 발생을 방지하기위해 메모리 초기화해준다.
 							fread(buf, 1, BUFFSIZE, fp);
 							fclose(fp);
-							printf("=================File View===================\n");
+							printf("=====================File View=======================\n");
 							printf("file name : %s\n", target_filename);
-							printf("=============================================\n");
+							printf("=====================================================\n");
 							printf("%s", buf);
-							printf("=============================================\n\n");
+							printf("=====================================================\n\n");
 						}
 						else
 							printf("%s", FILE_ERROR);
@@ -209,12 +209,12 @@ int main(void)
 		if (!strcmp(buf, "3")) // 파일 추가
 		{
 			char path[512] = "./file/"; 
-			printf("=============================================\n");
+			printf("=====================================================\n");
 			printf("file name : ");
 			scanf("%s", buf);
 			strcat(path, buf);
 			printf("* Enter 'exit' to exit the input mode.\n");
-			printf("=============================================\n");
+			printf("=====================================================\n");
 			getchar(); // 입력버퍼 한번 비워줘야한다.
 			FILE *fp;
 			fp = fopen(path, "w"); // 파일 만드는 도중에 ctrl+c 종료해도 파일 만들어짐
@@ -226,7 +226,7 @@ int main(void)
 				fputs(buf, fp);
 				fputs("\n", fp); // 개행문자 넣어준다.
 			}
-			printf("=============================================\n\n");
+			printf("=====================================================\n\n");
 			fclose(fp);
 			printf("File creation successful!!\n\n");
 
@@ -237,7 +237,7 @@ int main(void)
 			int file_num;
 			system("clear");
 			creat_filelist();
-			printf("select file num for remove(1~99) : "); 
+			printf("select file num for delete(1~99) : "); 
 			scanf("%d", &file_num);
 			file_num--;
 			if (file_num >= 0 && file_num < 20)
@@ -247,7 +247,7 @@ int main(void)
 				if(remove(path)) // 파일 삭제
 					printf("%s",FILE_ERROR); // 파일 삭제 실패 시
 				else
-					printf("\n%s File removal successful!!\n\n", file_list[file_num]); // 파일 삭제 성공 시
+					printf("\n%s File deletion successful!!\n\n", file_list[file_num]); // 파일 삭제 성공 시
 
 			}
 			else
@@ -273,11 +273,11 @@ int main(void)
 				{
 					memset(buf, 0, sizeof(buf)); //fread 전 메모리 초기화 필수
 					fread(buf, 1, BUFFSIZE, fp);
-					printf("\n=================File View===================\n");
+					printf("\n=====================File View=======================\n");
 					printf("file name : %s\n", file_list[file_num]);
-					printf("=============================================\n");
+					printf("=====================================================\n");
 					printf("%s", buf);
-					printf("=============================================\n\n");
+					printf("=====================================================\n\n");
 					fclose(fp);
 				}
 				else
@@ -317,24 +317,62 @@ void login_check(int sockfd)
 	char buf[BUFFSIZE] = { 0, };
 	while (1)
 	{
-		printf("ID: ");
-		scanf("%s", id); // id 입력 받기
-		send(sockfd, id, strlen(id) + 1, 0);
+		printf("===================Select Menu=======================\n");
+		printf("      1.log in                 2.User view\n");
+		printf("      3.sign up                4.account delete\n");
+		printf("=====================================================\n");
+		printf("select menu number : ");
+		scanf("%s", buf); // 원하는 메뉴 선택
+		printf("\n");
+		system("clear");
+		printf("\n\n\n");
+		send(sockfd, buf, sizeof(buf), 0); // 번호 전달
 
-		printf("PW: ");
-		scanf("%s", pw); // pw 입력 받기
-		send(sockfd, pw, strlen(pw) + 1, 0);
-
-		recv(sockfd, buf, sizeof(buf),0); // 성공여부 수신
-		printf("%s\n", buf);
-
-		if (strstr(buf, "fail"))
-			printf("===============Log in again==================\n");
-		else
+		if (!strcmp(buf, "1") || !strcmp(buf, "3"))
 		{
-			printf("****************FTP Start********************\n\n");
-			return;
+			printf("=====================================================\n");
+			if (!strcmp(buf, "1"))
+				printf("                    Start login\n");
+			else
+				printf("                 Start creating ID\n");
+			printf("=====================================================\n");
+			printf("ID: ");
+			scanf("%s", id); // id 입력 받기
+			send(sockfd, id, strlen(id) + 1, 0);
+
+			printf("PW: ");
+			scanf("%s", pw); // pw 입력 받기
+			send(sockfd, pw, strlen(pw) + 1, 0);
+
+			recv(sockfd, buf, sizeof(buf), 0); // 성공여부 수신
+			printf("\n%s\n", buf);
+
+			if (strstr(buf, "fail") || strstr(buf, "Sign-up"));
+			else
+			{
+				printf("********************FTP Start************************\n\n");
+				return;
+			}
 		}
+		if (!strcmp(buf, "2") || !strcmp(buf, "4"))
+		{
+			int num = atoi(buf); // 2인지 4인지 알기 위함
+			recv(sockfd, buf, sizeof(buf), 0); // 접속중인 유저 + ID 리스트 전달받음
+			printf("=====================================================\n");
+			printf("                    Account list\n");
+			printf("=====================================================\n");
+			printf("%s", buf);
+			printf("=====================================================\n\n");
+			if (num == 4)
+			{
+				printf("select ID num for delete(1~99) : ");
+				scanf("%s", buf);
+				send(sockfd, buf, sizeof(buf), 0); // 번호 전달
+				recv(sockfd, buf, sizeof(buf), 0); // 성공 여부 수신
+				printf("\n%s\n", buf);
+			}
+		}
+		
 	}
 }
 
@@ -355,9 +393,9 @@ void creat_filelist()  // 파일리스트 만들기
 	}
 
 	memset(file_list, 0, sizeof(file_list)); // 파일 리스트 변수의 초기화 필수
-	printf("================FILE LIST====================\n");
+	printf("====================FILE LIST========================\n");
 	printf("* Read only .txt file\n");
-	printf("=============================================\n");
+	printf("=====================================================\n");
 	while ((dir = readdir(dp)) != NULL) 
 	{
 		if (!dir->d_ino || !strstr(dir->d_name, ".txt") || !strcmp(dir->d_name, "file_list.txt") || !strcmp(dir->d_name, "server_filelist.txt")) continue; // 오직 txt 파일만 본다 (제외할 파일 선택)
@@ -366,7 +404,7 @@ void creat_filelist()  // 파일리스트 만들기
 		printf("%s", buf);
 		fputs(buf, fp); // 파일 리스트를 만들기 위함.
 	}
-	printf("=============================================\n\n");
+	printf("=====================================================\n\n");
 
 	fclose(fp); // 파일 종료
 	closedir(dp); // 폴더 종료
@@ -511,6 +549,3 @@ int connect_server()
 	else printf("Client-connect() is OK...\n");
 	return sockfd;
 }
-
-
-
