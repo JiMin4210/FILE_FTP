@@ -123,9 +123,9 @@ void *clnt_connection(void * count) {
 	printf("Num : %d User Accept() is OK...\n\n", num);
 	send(client_sock, INIT_MSG, strlen(INIT_MSG) + 1, 0); // 성공메세지 전송
 
-	alive_clnt[num] = 1; //클라이언트가 연결상태인것을 의미
+	alive_clnt[num] = 1; //클라이언트가 connect상태인것을 의미
 
-	while (1)
+	while (1) // Log_In Menu 시작
 	{
 		if (!recv(client_sock, buf, sizeof(buf), 0)) break;
 
@@ -259,7 +259,8 @@ void *clnt_connection(void * count) {
 		
 	}
 
-	while (1) {
+	while (1) // Main Menu 시작
+	{ 
 		if(!recv(client_sock, buf, sizeof(buf),0)) break;
 		//printf("number = %s\n", buf);
 		
@@ -403,8 +404,8 @@ int login_check(int num, int client_sock) // 로그인 성공시 1 리턴 + 연결 끊길 시
 		{
 			if (!strcmp(user_pw[i], input_pw))
 			{
-				int flag = 1; // 중복 로그인 체크용 플레그 비트;
-				for (int i = 0; i < MAX_CLIENT; i++) // 현재 로그인중인 사람들중에 id가 중복되는지 체크 (동시 접속 타이밍이 완전 절묘하게 맞으면 동시로그인이 가능하긴함)
+				int flag = 1; // 중복 로그인 체크용 플래그 비트;
+				for (int i = 0; i < MAX_CLIENT; i++) // 현재 로그인중인 사람들중에 id가 중복되는지 체크 (동시 접속 타이밍이 완전 절묘하게 맞으면 동시로그인이 가능하긴함 - 근데 거의 중복체크 잘 되는거 확인)
 				{
 					if (alive_clnt[i])
 					{
@@ -477,7 +478,7 @@ void sign_up(int num, int client_sock) // 회원가입 선택 할 때 - 파일로 만듬으로�
 			sprintf(buf, "%s\t%s\n", input_id, input_pw); // 파일에 id, pw 넣어줄 준비
 			FILE *fp;
 			fp = fopen("User_info.txt", "a");
-			fputs(buf, fp); // 파일에 id, pw넣어주고 닫아준다. - 덤프 문제 여기서 발생
+			fputs(buf, fp); // 파일에 id, pw넣어주고 닫아준다. - 덤프 문제 여기서 발생 (단순 fp안써준 오류였음)
 			fclose(fp);
 			update_id(); // id, pw 변수 최신화
 
@@ -534,12 +535,6 @@ void update_id()
 		count = 0;
 	}
 	fclose(fp);
-	//for (int i = 0; i < MAX_ID; i++) // ID, PW 체크용도
-	//{	
-		//if (user_id[i][0]) break;
-		//printf("ID = %s    pw = %s\n", user_id[i], user_pw[i]);
-	//}
-
 }
 
 void filelist_remove()

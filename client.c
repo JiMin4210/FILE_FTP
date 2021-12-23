@@ -74,8 +74,8 @@ int main(void)
 	pid = fork();
 
 	if(pid == 0) // 로그인 한 시점부터 FTP용 서버를 생성해준다.
-	{
-		make_server();
+	{ 
+		make_server(); // 이 함수 내부에 exit 있기에 밑에쪽은 굳이 if(pid>0)로 부모프로세스 명시를 안해줬다.
 	}	
 
 	send_filelist(sockfd,1); // 파일리스트 만들고 서버에 전송
@@ -312,7 +312,7 @@ int main(void)
 	return 0;
 }
 
-void login_check(int sockfd)
+void login_check(int sockfd) // 초기화면에 대한 함수 (로그인 + 실시간 유저확인 + 회원가입 + ID제거)
 {
 	char buf[BUFFSIZE] = { 0, };
 	while (1)
@@ -376,7 +376,7 @@ void login_check(int sockfd)
 	}
 }
 
-void creat_filelist()  // 파일리스트 만들기
+void creat_filelist()  // 클라이언트 파일리스트 만들기
 {
 	DIR *dp; // 폴더 관련
 	struct dirent *dir; 
@@ -423,7 +423,7 @@ void send_filelist(int sockfd, int flag) // 파일리스트 전달
 	send(sockfd, MY_PORT, strlen(MY_PORT) + 1, 0); // 포트번호 전달
 }
 
-int FTP_Transfer(char *file_name, int sockfd)
+int FTP_Transfer(char *file_name, int sockfd) // FTP 전송 함수
 {
 	char buf[BUFFSIZE] = { 0, }; // 메모리 초기화 필수
 
@@ -459,7 +459,7 @@ int FTP_Receiver(char *file_name, int sockfd) // 파일을 자동으로 만들�
 	return 0;
 }
 
-void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이유는 없음
+void make_server() // 서버쪽은 fork로 해결 - 이 쪽은 딱히 스레드를 쓸 이유는 없음
 {
 	int sockfd, new_fd;
 	struct sockaddr_in my_addr;
@@ -524,7 +524,7 @@ void make_server() // 서버쪽은 fork로 해결 - 딱히 스레드를 쓸 이�
 	exit(0);
 }
 
-int connect_server()
+int connect_server() // 상대 서버와 연결하는 함수 - 리턴값으로 소켓번호를 받는다.
 {
 	int sockfd;
 	struct sockaddr_in dest_addr;
