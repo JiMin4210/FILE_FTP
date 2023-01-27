@@ -5,13 +5,13 @@
 - **프로젝트 기간** : 2021.10 ~ 2021.12
 
 ## :books: 얻은 역량
-- linux 환경에서의 코딩과 컴파일 능력
-- server, client 설계 능력
-- file 입출력 활용 능력
-- Thread, Fork에 대한 이해
-- Multi Thread 환경에서 자원 공유의 문제점에 대한 이해
-- Mutex(상호 배제) 활용에 대한 이해
-- tcp/ip 통신 과정, Ip, Port에 대한 이해
+> Linux 환경에서의 코딩과 컴파일 능력<br>
+> Server, Client 설계 능력<br>
+> File 입출력 활용 능력<br>
+> Thread, Fork에 대한 이해<br>
+> Multi Thread 환경에서 자원 공유의 문제점에 대한 이해<br>
+> Mutex(상호 배제) 활용에 대한 이해<br>
+> Tcp/Ip 통신 과정, Ip, Port에 대한 이해<br>
 
 
 ## ⭐ 기능
