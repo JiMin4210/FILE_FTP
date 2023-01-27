@@ -12,18 +12,18 @@
 - **로그인 성공 화면**
     > 파일 목록을 서버에 전송, 파일 생성, 파일 삭제 <br>
     > 실시간 접속중인 다른 사용자가 소유한 파일 받기, 다른 사용자가 소유한 파일 구경
-<p align="center"><img src="https://user-images.githubusercontent.com/90883534/215122666-a81908c8-675b-42ca-a51c-d8781feb6a18.png" width="650" height="350"/></p>
+<p align="center"><img src="https://user-images.githubusercontent.com/90883534/215122666-a81908c8-675b-42ca-a51c-d8781feb6a18.png" width="650" height="450"/></p>
 
 - **FTP**
     > 현재 FTP 서버에 현재 4명의 사용자가 접속중인 상태<br>
     > 재 접속되어 있는 사용자들의 파일명을 출력하고 전송 받을 파일 선택
-<p align="center"><img src="https://user-images.githubusercontent.com/90883534/215122958-a39ae139-5560-4b75-bad6-311d05cccfb8.png" width="650" height="350"/></p>
+<p align="center"><img src="https://user-images.githubusercontent.com/90883534/215122958-a39ae139-5560-4b75-bad6-311d05cccfb8.png" width="650" height="450"/></p>
 
 ## 🔧 시스템 구조
 
 ## ⚡ 사용 기술
-- **Thread** : MQTT, Influxdb, Grafana 서버 제작
-- **TCP/IP** : Web 통신 프로토콜
+- **Multi Thread** 
+- **TCP/IP** : 통신 프로토콜
 
 ## 📝 사용 언어
 - **C** : MQTT 통신, HTTP 통신, 수족관 제어를 위한 센서 제어
