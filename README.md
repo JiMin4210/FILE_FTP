@@ -29,8 +29,6 @@
     > 실시간으로 접속되어 있는 사용자들의 소유한 파일명을 출력하고 전송 받을 파일 선택
 <p align="center"><img src="https://user-images.githubusercontent.com/90883534/215122958-a39ae139-5560-4b75-bad6-311d05cccfb8.png" width="650" height="450"/></p>
 
-## 🔧 시스템 구조
-
 ## ⚡ 사용 기술
 - **Multi Thread** 
 - **TCP/IP** : 통신 프로토콜
